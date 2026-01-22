@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career Assistant | CareerPath</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="auth.js"></script>
+  <script>
+    // Redirect to login page if the user is not authenticated
+    requireAuth();
+  </script>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="logo">⚡ CareerPath</div>
+    <nav>
+      <a href="profile.html">My Profile</a>
+      <a class="active" href="career-assistant.html">Career Assistant</a>
+    </nav>
+    <div class="user">
+      <span class="avatar">ME</span>
+      <a href="#" onclick="logout()">Sign out</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="chat-card">
+      <div class="chat-header">
+        <div class="chat-title">
+          <span class="chat-icon">💡</span>
+          <div>
+            <h2>Career Assistant</h2>
+            <p class="status">🟢 Online · Powered by AI</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-body" id="chatBody">
+        <div class="message bot">
+          <p>
+            Hi there! I'm your Career Assistant. I can help you find career
+            paths based on your skills and interests. How can I help you today?
+          </p>
+          <span class="time">00:20</span>
+        </div>
+      </div>
+
+      <div class="chat-input">
+        <input type="text" id="userInput" placeholder="Ask for career advice..." />
+        <button class="send-btn" id="sendBtn">✈️</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Select DOM elements
+    const chatBodyEl = document.getElementById("chatBody");
+    const inputEl = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    // Check for user profile info on page load
+    const profile = JSON.parse(localStorage.getItem("profile"));
+    if (profile && (profile.skills || profile.interests)) {
+      const welcomeMsg = `
+        <div class="message bot">
+          <p>
+            I see you have skills in <b>${profile.skills || "various areas"}</b> 
+            and interests in <b>${profile.interests || "different fields"}</b>.
+            I can suggest career paths tailored just for you.
+          </p>
+          <span class="time">00:21</span>
+        </div>
+      `;
+      chatBodyEl.innerHTML += welcomeMsg;
+    }
+
+    // Chat handling function
+    async function handleChat() {
+      const userMessage = inputEl.value.trim();
+      if (!userMessage) return;
+
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      // 1. Display user message in the chat UI
+      chatBodyEl.innerHTML += `
+        <div class="message user">
+          <p>${userMessage}</p>
+          <span class="time">${now}</span>
+        </div>
+      `;
+      
+      inputEl.value = ""; 
+      chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+
+      try {
+        // 2. Send request to the backend server
+        const response = await fetch("http://localhost:3000/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage })
+        });
+
+        // Check if server response is successful
+        if (!response.ok) {
+           throw new Error("Server error: " + response.status);
+        }
+
+        const data = await response.json();
+
+        // 3. Display AI response in the chat UI
+        if (data.reply) {
+          chatBodyEl.innerHTML += `
+            <div class="message bot">
+              <p>${data.reply}</p>
+              <span class="time">${now}</span>
+            </div>
+          `;
+        } else {
+          throw new Error(data.error || "No reply received.");
+        }
+      } catch (err) {
+        console.error("Chat error:", err);
+        // Display error message to user
+        chatBodyEl.innerHTML += `
+          <div class="message bot">
+            <p>Sorry, I'm having trouble connecting to my brain right now. Please make sure the server is running!</p>
+          </div>
+        `;
+      }
+      // Auto-scroll to the latest message
+      chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+    }
+
+    // Event Listeners for button click and 'Enter' key press
+    sendBtn.addEventListener("click", handleChat);
+    inputEl.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") handleChat();
+    });
+  </script>
+
+</body>
+</html>

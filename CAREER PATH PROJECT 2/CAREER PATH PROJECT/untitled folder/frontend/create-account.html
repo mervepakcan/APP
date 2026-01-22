@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Account | CareerPath</title>
+
+  <!-- ORTAK STYLE -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="logo">⚡ CareerPath</div>
+
+    <div class="nav-actions">
+      <a href="login.html" class="link">Log in</a>
+      <button class="primary-btn">Get Started</button>
+    </div>
+  </header>
+
+  <!-- PAGE -->
+  <main class="page">
+
+    <!-- AUTH CARD -->
+    <div class="auth-card">
+
+      <div class="icon">👤+</div>
+
+      <h1>Create Account</h1>
+      <p class="subtitle">
+        Join us and start planning your career
+      </p>
+
+      <form>
+        <label>Email Address</label>
+        <input
+          type="email"
+          placeholder="name@company.com"
+          required
+        />
+
+        <label>Password</label>
+        <input
+          type="password"
+          placeholder="••••••••"
+          required
+        />
+
+        <label>Confirm Password</label>
+        <input
+          type="password"
+          placeholder="••••••••"
+          required
+        />
+
+        <button type="submit" class="primary-btn full">
+          Create Account
+        </button>
+      </form>
+
+      <p class="footer-text">
+        Already have an account?
+        <a href="login.html">Sign in</a>
+      </p>
+
+    </div>
+  </main>
+
+  <!-- AUTH SCRIPT (EN SONA) -->
+  <!-- <script src="auth.js"></script> -->
+
+  <script>
+  const form = document.querySelector("form");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = form.querySelector('input[type="email"]').value;
+    const password = form.querySelectorAll('input[type="password"]')[0].value;
+    const confirmPassword = form.querySelectorAll('input[type="password"]')[1].value;
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Registration failed");
+        return;
+      }
+
+      alert("Account created successfully!");
+      window.location.href = "login.html";
+
+    } catch (err) {
+      alert("Server error. Try again later.");
+    }
+  });
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Profile | CareerPath</title>
+
+  <!-- STYLE -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- AUTH CHECK
+  <script src="auth.js"></script>
+  <script>
+    requireAuth(); -->
+  <!-- </script> -->
+   <script>
+  // simple auth check based on what you set on login
+  if (localStorage.getItem("loggedIn") !== "true" || !localStorage.getItem("userId")) {
+    window.location.href = "login.html";
+  }
+
+  function logout() {
+    localStorage.removeItem("loggedIn");
+    localStorage.removeItem("userId");
+    window.location.href = "login.html";
+  }
+</script>
+
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="logo">⚡ CareerPath</div>
+
+    <nav>
+      <a class="active" href="profile.html">My Profile</a>
+      <a href="career-assistant.html">Career Assistant</a>
+    </nav>
+
+    <div class="user">
+      <span class="avatar">ME</span>
+      <a href="#" onclick="logout()">Sign out</a>
+    </div>
+  </header>
+
+  <!-- PAGE -->
+  <main class="page">
+
+    <!-- HEADER -->
+    <div class="page-header">
+      <div>
+        <h1>Your Profile</h1>
+        <p class="subtitle">
+          Manage your professional information to get better recommendations.
+        </p>
+      </div>
+
+      <button class="btn-outline" id="editBtn">✏️ Edit Profile</button>
+    </div>
+
+    <!-- GRID -->
+    <section class="grid">
+
+      <div class="card">
+        <h3>🎓 Education</h3>
+        <p class="empty" id="eduText">No education details added yet.</p>
+        <input class="edit-input" id="eduInput" placeholder="Your education" />
+      </div>
+
+      <div class="card">
+        <h3>💼 Experience</h3>
+        <p class="empty" id="expText">No experience details added yet.</p>
+        <input class="edit-input" id="expInput" placeholder="Your experience" />
+      </div>
+
+      <!-- <div class="card">
+        <h3>⚡ Skills</h3>
+        <p class="empty" id="skillText">No skills listed yet.</p>
+        <input class="edit-input" id="skillInput" placeholder="Your skills" />
+      </div> -->
+
+      <div class="card">
+  <h3>⚡ Skills</h3>
+
+  <!-- display mode -->
+  <p class="empty" id="skillText">No skills listed yet.</p>
+
+  <!-- edit mode -->
+  <div class="edit-input" id="skillsBox" style="display:none;"></div>
+</div>
+
+
+
+      <div class="card">
+        <h3>❤️ Interests</h3>
+        <p class="empty" id="intText">No interests specified yet.</p>
+        <input class="edit-input" id="intInput" placeholder="Your interests" />
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- PROFILE LOGIC -->
+  <script>
+  const editBtn = document.getElementById("editBtn");
+  const inputs = document.querySelectorAll(".edit-input");
+
+  const eduText = document.getElementById("eduText");
+  const expText = document.getElementById("expText");
+  const skillText = document.getElementById("skillText");
+  const intText = document.getElementById("intText");
+
+  const eduInput = document.getElementById("eduInput");
+  const expInput = document.getElementById("expInput");
+  // const skillInput = document.getElementById("skillInput");
+  const intInput = document.getElementById("intInput");
+
+  const skillsBox = document.getElementById("skillsBox");
+
+// render checkboxes
+async function renderSkillsCheckboxes(selectedIds = []) {
+  const res = await fetch("/api/skills");
+  const skills = await res.json();
+
+  skillsBox.innerHTML = skills.map(s => `
+    <label style="display:flex; gap:8px; margin:6px 0;">
+      <input
+        type="checkbox"
+        class="skillChk"
+        value="${s.SkillID}"
+        ${selectedIds.includes(s.SkillID) ? "checked" : ""}
+      >
+      ${s.SkillName}
+    </label>
+  `).join("");
+}
+
+// read selected skill IDs
+function getSelectedSkillIds() {
+  return Array.from(document.querySelectorAll(".skillChk:checked"))
+    .map(cb => Number(cb.value));
+}
+
+
+  let editing = false;
+
+  async function loadProfile() {
+    const userId = localStorage.getItem("userId");
+
+    const res = await fetch(`/api/profile/${userId}`);
+    const p = await res.json();
+
+    // DB fields are capitalized in our API response (Education, Experience, Interests)
+    eduText.textContent = p.Education || "No education details added yet.";
+    expText.textContent = p.Experience || "No experience details added yet.";
+    intText.textContent = p.Interests || "No interests specified yet.";
+
+    // Skills: your DB schema stores skills in UserSkills, not Profiles
+    // For now we keep it local OR leave it as placeholder until we implement Skill endpoints.
+    // If you want, we can wire this next.
+    // skillText.textContent = localStorage.getItem("skillsText") || "No skills listed yet.";
+
+    eduInput.value = p.Education || "";
+    expInput.value = p.Experience || "";
+    intInput.value = p.Interests || "";
+
+    // Keep your existing skills input for now (temporary)
+    // const skillsLocal = localStorage.getItem("skillsText") || "";
+    // skillInput.value = skillsLocal;
+
+    // load skills
+    const skillsRes = await fetch(`/api/users/${userId}/skills`);
+    const userSkills = await skillsRes.json();
+
+    skillText.textContent = userSkills.length
+      ? userSkills.map(s => s.SkillName).join(", ")
+      : "No skills listed yet.";
+
+    const selectedIds = userSkills.map(s => s.SkillID);
+    await renderSkillsCheckboxes(selectedIds);
+
+  }
+
+  async function saveProfile() {
+    const userId = localStorage.getItem("userId");
+
+    // Save Education/Experience/Interests to DB
+    const res = await fetch(`/api/profile/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        education: eduInput.value,
+        experience: expInput.value,
+        interests: intInput.value
+      })
+    });
+
+    // save skills
+    const skillIds = getSelectedSkillIds();
+
+    const skillsSave = await fetch(`/api/users/${userId}/skills`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skillIds })
+    });
+
+    if (!skillsSave.ok) {
+      alert("Failed to save skills");
+      return;
+    }
+
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || "Failed to save profile");
+      return;
+    }
+
+    // Skills: temporary local storage until we implement /api/skills and /api/users/:id/skills
+    // localStorage.setItem("skillsText", skillInput.value);
+
+    await loadProfile();
+  }
+
+  editBtn.addEventListener("click", async () => {
+    editing = !editing;
+
+    inputs.forEach(input => {
+      input.style.display = editing ? "block" : "none";
+    });
+
+    editBtn.textContent = editing ? "💾 Save Profile" : "✏️ Edit Profile";
+
+    if (!editing) {
+      await saveProfile();
+    }
+  });
+
+  // Initial load
+  loadProfile();
+</script>
+
+
+</body>
+</html>

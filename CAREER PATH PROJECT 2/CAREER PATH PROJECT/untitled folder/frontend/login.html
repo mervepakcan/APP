@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login | CareerPath</title>
+
+  <!-- ORTAK STYLE -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- AUTH -->
+  <script src="auth.js"></script>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="logo">⚡ CareerPath</div>
+
+    <div class="nav-actions">
+      <a href="create-account.html" class="link">Create account</a>
+      <button class="primary-btn">Get Started</button>
+    </div>
+  </header>
+
+  <!-- PAGE -->
+  <main class="page">
+
+    <!-- AUTH CARD -->
+    <div class="auth-card">
+
+      <h1>Welcome Back</h1>
+      <p class="subtitle">
+        Sign in to continue your career journey
+      </p>
+
+      <form>
+        <label>Email Address</label>
+        <input
+          type="email"
+          placeholder="name@company.com"
+          required
+        />
+
+        <label>Password</label>
+        <input
+          type="password"
+          placeholder="••••••••"
+          required
+        />
+
+        <button type="submit" class="primary-btn full">
+          Sign in
+        </button>
+      </form>
+
+      <p class="footer-text">
+        Don’t have an account?
+        <a href="create-account.html">Create an account</a>
+      </p>
+
+    </div>
+  </main>
+
+  <!-- LOGIN SCRIPT -->
+<script>
+  const form = document.querySelector("form");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = form.querySelector('input[type="email"]').value.trim();
+    const password = form.querySelector('input[type="password"]').value;
+
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Login failed");
+        return;
+      }
+
+      // Save session info
+      localStorage.setItem("userId", data.userId);
+      localStorage.setItem("loggedIn", "true");
+
+      // Go to profile page
+      window.location.href = "profile.html";
+
+    } catch (err) {
+      alert("Server error. Try again later.");
+    }
+  });
+</script>
+
+
+</body>
+</html>
